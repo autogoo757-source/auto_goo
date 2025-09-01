@@ -1,7 +1,7 @@
 import telebot
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-# 🌟 Ваш бот-токен
+# 🌟 Токен бота
 TOKEN = "8054778077:AAF9wNFN4v5KdDyVdMkmHB86TgJfrhJ7-a8"
 bot = telebot.TeleBot(TOKEN)
 
@@ -14,83 +14,93 @@ CONTACTS = {
     "Telegram": "@auto_vukyp_M"
 }
 
-# 📝 Стартове повідомлення для клієнтів
+# 📝 Стартове сообщение
 START_MESSAGE = f"""
-Привіт! 👋
-Я — офіційний бот сервісу **Автовикуп** 🚗💨
+👋 Вітаємо у сервісі швидкого та чесного **автовикупу**!
 
-Ми допомагаємо з:
-✅ Продажем авто після пожежі або ДТП  
-✅ Швидкою оцінкою авто  
-✅ Продажем будь-яких автомобілів швидко та вигідно  
+Ми купуємо будь-які авто:
+🔥 Після пожежі та ДТП  
+⏳ Старі або з великим пробігом  
+⚙️ Неробочі або проблемні  
+✨ А також доглянуті та справні машини
 
-Щоб ми могли швидко оцінити ваше авто, залиште інформацію у такому форматі:  
-1️⃣ Пробіг авто (км)  
-2️⃣ Короткий опис авто (стан кузова, мотор, особливості)  
-3️⃣ Ваш Telegram або номер телефону  
-✨ Чим детальніше опишете авто, тим швидше і вигідніше ми допоможемо!  
-
-Наші контакти для зв'язку:
-📞 Телефон: {CONTACTS['Телефон']}
-💬 Telegram: {CONTACTS['Telegram']}
-
-Ми зв’яжемося з вами протягом 24 годин! ⏰
+Щоб оцінка авто була максимально точною, оберіть категорію: 
 """
 
-# 🔹 Кнопки для клієнтів
-def main_keyboard():
+# 🔹 Главные кнопки категорий
+def category_keyboard():
     keyboard = InlineKeyboardMarkup()
-    keyboard.add(InlineKeyboardButton("📄 Залишити заявку", callback_data="apply"))
-    keyboard.add(InlineKeyboardButton("📞 Контакти", callback_data="contacts"))
+    keyboard.add(InlineKeyboardButton("🔥 Після ДТП", callback_data="category_accident"))
+    keyboard.add(InlineKeyboardButton("🔥 Після пожежі", callback_data="category_fire"))
+    keyboard.add(InlineKeyboardButton("⏳ Швидка оцінка", callback_data="category_quick"))
+    keyboard.add(InlineKeyboardButton("✨ Доглянуте авто", callback_data="category_good"))
     return keyboard
 
 # Команда /start
 @bot.message_handler(commands=['start'])
 def start(message):
-    bot.send_message(message.chat.id, START_MESSAGE, reply_markup=main_keyboard())
+    bot.send_message(message.chat.id, START_MESSAGE, reply_markup=category_keyboard())
 
-# Обробка натискань на кнопки
-@bot.callback_query_handler(func=lambda call: True)
-def callback_inline(call):
-    if call.data == "apply":
-        bot.send_message(
-            call.message.chat.id,
-            "✍️ Будь ласка, напишіть ваше повідомлення у форматі:\n\n"
-            "1️⃣ Пробіг авто (км)\n"
-            "2️⃣ Короткий опис авто (стан кузова, мотор, особливості)\n"
-            "3️⃣ Ваш Telegram або номер телефону\n\n"
-            "✨ Чим детальніше опишете авто, тим швидше і вигідніше ми допоможемо!"
-        )
-    elif call.data == "contacts":
-        bot.send_message(call.message.chat.id, f"📞 Телефон: {CONTACTS['Телефон']}\n💬 Telegram: {CONTACTS['Telegram']}")
+# Обработка выбора категории
+@bot.callback_query_handler(func=lambda call: call.data.startswith("category_"))
+def category_chosen(call):
+    categories = {
+        "category_accident": "🔥 Після ДТП",
+        "category_fire": "🔥 Після пожежі",
+        "category_quick": "⏳ Швидка оцінка",
+        "category_good": "✨ Доглянуте авто"
+    }
+    selected_category = categories.get(call.data, "❓ Не відомо")
+    bot.send_message(
+        call.message.chat.id,
+        f"Ви обрали категорію: {selected_category}\n\n"
+        "✍️ Будь ласка, надішліть ваше повідомлення у форматі:\n"
+        "1️⃣ Пробіг авто (км)\n"
+        "2️⃣ Короткий опис авто (стан кузова, мотор, особливості)\n"
+        "3️⃣ Ваш Telegram або номер телефону\n\n"
+        "📸 Можна додавати фото або відео для точної оцінки!"
+    )
 
-# Обробка всіх повідомлень (текст + фото)
-@bot.message_handler(content_types=['text', 'photo', 'document'])
+# Кнопка контактов
+@bot.message_handler(commands=['contacts'])
+def send_contacts(message):
+    bot.send_message(
+        message.chat.id,
+        f"Наші контакти:\n📞 Телефон: {CONTACTS['Телефон']}\n📲 Telegram: {CONTACTS['Telegram']}"
+    )
+
+# Обработка всех сообщений (текст, фото, видео, документы)
+@bot.message_handler(content_types=['text', 'photo', 'video', 'document'])
 def handle_client(message):
     user_id = message.from_user.id
     user_name = message.from_user.first_name
-
-    # Пересилання адміну
+    category = "Категорія не вибрана"
+    
+    # Если пользователь выбирал категорию ранее
+    # (можно расширить с сохранением состояния в dict, пока простая версия)
+    
     for admin in ADMINS:
-        # Если текст
+        # Текст
         if message.content_type == 'text':
             bot.send_message(admin, f"📩 Нова заявка від {user_name} (ID: {user_id}):\n\n{message.text}")
-        # Если фото
+        # Фото
         elif message.content_type == 'photo':
-            # Берем самое большое фото
             photo_id = message.photo[-1].file_id
-            caption = f"📩 Нова заявка від {user_name} (ID: {user_id}):\n\n{message.caption or 'Фото без опису'}"
+            caption = f"📩 Нова заявка від {user_name} (ID: {user_id}):\n\n{message.caption or 'Фото авто'}"
             bot.send_photo(admin, photo_id, caption=caption)
-        # Если документ
+        # Видео
+        elif message.content_type == 'video':
+            caption = f"📩 Нова заявка від {user_name} (ID: {user_id}):\n\n{message.caption or 'Відео авто'}"
+            bot.send_video(admin, message.video.file_id, caption=caption)
+        # Документ
         elif message.content_type == 'document':
             caption = f"📩 Нова заявка від {user_name} (ID: {user_id}):\n\n{message.caption or 'Документ'}"
             bot.send_document(admin, message.document.file_id, caption=caption)
 
-    # Подтверждение клиенту
     bot.reply_to(
         message,
         "Дякуємо! ✅ Ваші дані отримані, ми зв’яжемося з вами найближчим часом. "
-        "Підготуйте, будь ласка, фото авто для оцінки 📸"
+        "Підготуйте, будь ласка, фото або відео авто для оцінки 📸"
     )
 
 # Запуск бота

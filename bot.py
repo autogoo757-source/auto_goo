@@ -5,110 +5,96 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 TOKEN = "8054778077:AAF9wNFN4v5KdDyVdMkmHB86TgJfrhJ7-a8"
 bot = telebot.TeleBot(TOKEN)
 
-# 👑 Админы бота
+# 👑 Адмін
 ADMINS = [7290935924]
 
-# 📞 Контакты компании
+# 📞 Контакти компанії
 CONTACTS = {
     "Телефон": "+380731443477",
     "Telegram": "@auto_vukyp_M"
 }
 
-# 📝 Стартовое сообщение
+# 📝 Стартове повідомлення
 START_MESSAGE = f"""
 👋 Вітаємо у сервісі швидкого та чесного **автовикупу**!
 
 Ми купуємо **будь-які авто** у будь-якому стані:
-🔥 Після пожежі та ДТП  
 ⚙️ Биті, проблемні, неробочі  
 ⏳ Старі авто та авто з великим пробігом  
 🛑 Без документів та нерастаможені  
 
-⚡ Купуємо швидко, чесно і вигідно!  
-Щоб оцінка авто була максимально точною, оберіть категорію:
+⚡ Купуємо швидко, чесно і вигідно!
 """
 
-# 🔹 Главные кнопки категорий
-def category_keyboard():
+# 🔹 Головне меню
+def main_keyboard():
     keyboard = InlineKeyboardMarkup()
-    keyboard.add(InlineKeyboardButton("🔥 Після пожежі / ДТП", callback_data="category_fire_accident"))
-    keyboard.add(InlineKeyboardButton("⚡ Швидка оцінка", callback_data="category_quick"))
-    keyboard.add(InlineKeyboardButton("✨ Старі авто", callback_data="category_old"))
+    keyboard.add(InlineKeyboardButton("🚗 Оцінка авто", callback_data="menu_evaluation"))
+    keyboard.add(InlineKeyboardButton("📞 Зв'язатися з нами", callback_data="menu_contacts"))
+    keyboard.add(InlineKeyboardButton("ℹ️ Умови викупу", callback_data="menu_terms"))
     return keyboard
 
-# Команда /start
+# 🔹 Кнопка «Назад»
+def back_keyboard():
+    keyboard = InlineKeyboardMarkup()
+    keyboard.add(InlineKeyboardButton("⬅️ Назад", callback_data="menu_back"))
+    return keyboard
+
+# Старт / головне меню
 @bot.message_handler(commands=['start'])
 def start(message):
-    bot.send_message(message.chat.id, START_MESSAGE, reply_markup=category_keyboard())
+    bot.send_message(message.chat.id, START_MESSAGE, reply_markup=main_keyboard())
 
-# Обработка выбора категории
-@bot.callback_query_handler(func=lambda call: call.data.startswith("category_"))
-def category_chosen(call):
-    if call.data == "category_fire_accident":
+# Обробка кнопок
+@bot.callback_query_handler(func=lambda call: True)
+def callback_inline(call):
+    if call.data == "menu_evaluation":
         bot.send_message(
             call.message.chat.id,
-            "🔥 Після пожежі та ДТП 🔥\n"
-            "Ми купуємо **будь-які авто** у будь-якому стані, навіть без документів та нерастаможені.\n\n"
-            "✍️ Надішліть, будь ласка, інформацію у форматі:\n"
+            "🚗 **Оцінка авто**\n\n"
+            "Щоб ми могли швидко оцінити ваше авто, будь ласка, надішліть:\n"
             "1️⃣ Пробіг авто (км)\n"
             "2️⃣ Короткий опис авто (стан кузова, мотор, особливості)\n"
             "3️⃣ Ваш Telegram або номер телефону\n\n"
-            "📸 Можна додавати фото або відео для точної оцінки!\n\n"
-            f"Наші контакти для зв'язку:\n📞 Телефон: {CONTACTS['Телефон']}\n📲 Telegram: {CONTACTS['Telegram']}"
+            "📸 Можна додавати фото або відео для максимально точної оцінки!",
+            reply_markup=back_keyboard()
         )
-    elif call.data == "category_quick":
+    elif call.data == "menu_contacts":
         bot.send_message(
             call.message.chat.id,
-            "⚡ Швидка оцінка ⚡\n"
-            "Ми купуємо будь-які авто, навіть без документів та нерастаможені.\n\n"
-            "Пожалуйста, отправьте:\n"
-            "1️⃣ 📸 Фото автомобіля (з різних боків)\n"
-            "2️⃣ 🗓 Рік випуску\n"
-            "3️⃣ ⚙️ Коротко стан авто (битий, після ДТП, без документів і т.д.)\n\n"
-            "Після цього ми назвемо орієнтовну ціну.\n\n"
-            f"Наші контакти:\n📞 Телефон: {CONTACTS['Телефон']}\n📲 Telegram: {CONTACTS['Telegram']}"
+            f"📞 **Зв'язатися з нами**\n\n"
+            f"Телефон: {CONTACTS['Телефон']}\n"
+            f"Telegram: {CONTACTS['Telegram']}",
+            reply_markup=back_keyboard()
         )
-    elif call.data == "category_old":
+    elif call.data == "menu_terms":
         bot.send_message(
             call.message.chat.id,
-            "✨ Старі авто ✨\n"
-            "Ми викуповуємо навіть ваші старі “корчі” 🚗💨, будь-якого стану та пробігу.\n\n"
-            "✍️ Надішліть, будь ласка, інформацію у форматі:\n"
-            "1️⃣ Пробіг авто (км)\n"
-            "2️⃣ Короткий опис авто\n"
-            "3️⃣ Ваш Telegram або номер телефону\n\n"
-            "📸 Можна додавати фото або відео для точної оцінки!\n\n"
-            f"Наші контакти:\n📞 Телефон: {CONTACTS['Телефон']}\n📲 Telegram: {CONTACTS['Telegram']}"
+            "ℹ️ **Умови викупу**\n\n"
+            "• Купуємо будь-які авто, будь-якого стану, навіть без документів та нерастаможені\n"
+            "• Швидка оцінка та швидка оплата\n"
+            "• Прозорі умови і чесна ціна",
+            reply_markup=back_keyboard()
         )
+    elif call.data == "menu_back":
+        bot.send_message(call.message.chat.id, START_MESSAGE, reply_markup=main_keyboard())
 
-# Кнопка контактов
-@bot.message_handler(commands=['contacts'])
-def send_contacts(message):
-    bot.send_message(
-        message.chat.id,
-        f"Наші контакти:\n📞 Телефон: {CONTACTS['Телефон']}\n📲 Telegram: {CONTACTS['Telegram']}"
-    )
-
-# Обработка всех сообщений (текст, фото, видео, документы)
+# Обробка всіх повідомлень (текст, фото, відео, документи)
 @bot.message_handler(content_types=['text', 'photo', 'video', 'document'])
 def handle_client(message):
     user_id = message.from_user.id
     user_name = message.from_user.first_name
 
     for admin in ADMINS:
-        # Текст
         if message.content_type == 'text':
             bot.send_message(admin, f"📩 Нова заявка від {user_name} (ID: {user_id}):\n\n{message.text}")
-        # Фото
         elif message.content_type == 'photo':
             photo_id = message.photo[-1].file_id
             caption = f"📩 Нова заявка від {user_name} (ID: {user_id}):\n\n{message.caption or 'Фото авто'}"
             bot.send_photo(admin, photo_id, caption=caption)
-        # Видео
         elif message.content_type == 'video':
             caption = f"📩 Нова заявка від {user_name} (ID: {user_id}):\n\n{message.caption or 'Відео авто'}"
             bot.send_video(admin, message.video.file_id, caption=caption)
-        # Документ
         elif message.content_type == 'document':
             caption = f"📩 Нова заявка від {user_name} (ID: {user_id}):\n\n{message.caption or 'Документ'}"
             bot.send_document(admin, message.document.file_id, caption=caption)
